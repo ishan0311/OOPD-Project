@@ -29,7 +29,7 @@ void printLabelInt(const char* label, int value) {
 void simulate2G() {
     try {
         Protocol2G p;
-        CellularCore core(100000);                  // assumed core capacity
+        CellularCore core(100000);                 // assumed core capacity
         CellTower tower(1, "2G-Tower", &p, 1000);   // 1 MHz = 1000 kHz
 
         int maxSpectrum = tower.getMaxUsersBySpectrum();
