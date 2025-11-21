@@ -25,6 +25,9 @@ public:
     int getMessagesPerUser() const;
     int getOverheadPer100Messages() const;
 
+    // NEW: allow changing overhead at runtime
+    void setOverheadPer100Messages(int ov);
+
     int computeMaxUsersBySpectrum(int totalBWkHz) const;
 };
 

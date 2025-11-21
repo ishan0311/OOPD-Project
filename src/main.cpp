@@ -24,12 +24,14 @@ void printLabelInt(const char* label, int value) {
     io.terminate();
 }
 
-// --------- Simulation per generation (each can be threaded) ---------
+// --------- Simulation per generation (parametrized) ---------
 
-void simulate2G() {
+void simulate2G(int userOverhead, int maxMessagesPerCore) {
     try {
         Protocol2G p;
-        CellularCore core(100000);                 // assumed core capacity
+        p.setOverheadPer100Messages(userOverhead);
+
+        CellularCore core(maxMessagesPerCore);
         CellTower tower(1, "2G-Tower", &p, 1000);   // 1 MHz = 1000 kHz
 
         int maxSpectrum = tower.getMaxUsersBySpectrum();
@@ -38,6 +40,8 @@ void simulate2G() {
         if (maxCore < maxUsers) maxUsers = maxCore;
 
         printLine("========== 2G Simulation ==========");
+        printLabelInt("Overhead per 100 messages (%): ", userOverhead);
+        printLabelInt("Max messages per core: ", maxMessagesPerCore);
         printLabelInt("Max users by spectrum: ", maxSpectrum);
         printLabelInt("Approx max users by core: ", maxCore);
         printLabelInt("Effective max users (2G): ", maxUsers);
@@ -66,10 +70,12 @@ void simulate2G() {
     }
 }
 
-void simulate3G() {
+void simulate3G(int userOverhead, int maxMessagesPerCore) {
     try {
         Protocol3G p;
-        CellularCore core(100000);
+        p.setOverheadPer100Messages(userOverhead);
+
+        CellularCore core(maxMessagesPerCore);
         CellTower tower(2, "3G-Tower", &p, 1000);   // 1 MHz
 
         int maxSpectrum = tower.getMaxUsersBySpectrum();
@@ -78,6 +84,8 @@ void simulate3G() {
         if (maxCore < maxUsers) maxUsers = maxCore;
 
         printLine("========== 3G Simulation ==========");
+        printLabelInt("Overhead per 100 messages (%): ", userOverhead);
+        printLabelInt("Max messages per core: ", maxMessagesPerCore);
         printLabelInt("Max users by spectrum: ", maxSpectrum);
         printLabelInt("Approx max users by core: ", maxCore);
         printLabelInt("Effective max users (3G): ", maxUsers);
@@ -106,10 +114,12 @@ void simulate3G() {
     }
 }
 
-void simulate4G() {
+void simulate4G(int userOverhead, int maxMessagesPerCore) {
     try {
         Protocol4G p;
-        CellularCore core(100000);
+        p.setOverheadPer100Messages(userOverhead);
+
+        CellularCore core(maxMessagesPerCore);
         CellTower tower(3, "4G-Tower", &p, 1000);   // 1 MHz total
 
         int maxSpectrumPerAntenna = tower.getMaxUsersBySpectrum();
@@ -120,6 +130,8 @@ void simulate4G() {
         int coresNeeded = core.computeNeededCores(p, maxSpectrumTotal);
 
         printLine("========== 4G Simulation ==========");
+        printLabelInt("Overhead per 100 messages (%): ", userOverhead);
+        printLabelInt("Max messages per core: ", maxMessagesPerCore);
         printLabelInt("Max users by spectrum (per antenna): ", maxSpectrumPerAntenna);
         printLabelInt("Total 4G users with 4 antennas: ", maxSpectrumTotal);
         printLabelInt("Approx users per core (4G): ", maxPerCore);
@@ -154,10 +166,12 @@ void simulate4G() {
     }
 }
 
-void simulate5G() {
+void simulate5G(int userOverhead, int maxMessagesPerCore) {
     try {
         Protocol5G p;
-        CellularCore core(100000);
+        p.setOverheadPer100Messages(userOverhead);
+
+        CellularCore core(maxMessagesPerCore);
         CellTower tower(4, "5G-Tower", &p, 10000); // 10 MHz block
 
         int maxSpectrumPerAntenna = tower.getMaxUsersBySpectrum();
@@ -168,6 +182,8 @@ void simulate5G() {
         int coresNeeded = core.computeNeededCores(p, maxSpectrumTotal);
 
         printLine("========== 5G Simulation ==========");
+        printLabelInt("Overhead per 100 messages (%): ", userOverhead);
+        printLabelInt("Max messages per core: ", maxMessagesPerCore);
         printLabelInt("Max users by spectrum (per antenna): ", maxSpectrumPerAntenna);
         printLabelInt("Total 5G users with 16 antennas: ", maxSpectrumTotal);
         printLabelInt("Approx users per core (5G): ", maxPerCore);
@@ -202,23 +218,52 @@ void simulate5G() {
     }
 }
 
-// --------- main: sequential threaded execution (A) ---------
+// --------- main: MENU + user input + threads ---------
 
 int main() {
-    io.outputstring("Starting Cellular Network Simulator...\n");
+    while (true) {
+        io.outputstring("\n=== Cellular Network Simulator ===\n");
+        io.outputstring("1. Simulate 2G\n");
+        io.outputstring("2. Simulate 3G\n");
+        io.outputstring("3. Simulate 4G\n");
+        io.outputstring("4. Simulate 5G\n");
+        io.outputstring("5. Exit\n");
+        io.outputstring("Enter your choice: ");
 
-    std::thread t2(simulate2G);
-    t2.join();
+        int choice = io.inputint();
 
-    std::thread t3(simulate3G);
-    t3.join();
+        if (choice == 5) {
+            io.outputstring("Exiting simulator.\n");
+            break;
+        }
 
-    std::thread t4(simulate4G);
-    t4.join();
+        if (choice < 1 || choice > 5) {
+            io.errorstring("Invalid choice. Try again.\n");
+            continue;
+        }
 
-    std::thread t5(simulate5G);
-    t5.join();
+        io.outputstring("Enter overhead per 100 messages (percentage): ");
+        int overhead = io.inputint();
+        if (overhead < 0) overhead = 0;
 
-    io.outputstring("Simulation complete.\n");
+        io.outputstring("Enter max messages per core: ");
+        int maxMessages = io.inputint();
+        if (maxMessages <= 0) maxMessages = 1;
+
+        if (choice == 1) {
+            std::thread t(simulate2G, overhead, maxMessages);
+            t.join();
+        } else if (choice == 2) {
+            std::thread t(simulate3G, overhead, maxMessages);
+            t.join();
+        } else if (choice == 3) {
+            std::thread t(simulate4G, overhead, maxMessages);
+            t.join();
+        } else if (choice == 4) {
+            std::thread t(simulate5G, overhead, maxMessages);
+            t.join();
+        }
+    }
+
     return 0;
 }
